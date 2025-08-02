@@ -84,15 +84,19 @@ export class ProjectController extends BaseController {
 
   async getProject(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) {
+    const resolvedParams = await params;
+    if (!resolvedParams.id) {
+      return this.badRequest("Project ID is required");
+    }
     try {
       const userId = await this.getUserId(request);
       if (!userId) {
         return this.unauthorized();
       }
 
-      const projectId = params.id;
+      const projectId = resolvedParams.id;
       if (!projectId) {
         return this.badRequest("Project ID is required");
       }
