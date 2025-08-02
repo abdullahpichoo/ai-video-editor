@@ -1,46 +1,46 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn, getSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState } from "react";
+import { signIn, getSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SignIn() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false
-      })
+        redirect: false,
+      });
 
       if (result?.error) {
-        setError("Invalid email or password")
+        setError("Invalid email or password");
       } else {
-        const session = await getSession()
+        const session = await getSession();
         if (session) {
-          router.push("/projects")
+          router.push("/projects");
         }
       }
     } catch {
-      setError("An error occurred. Please try again.")
+      setError("An error occurred. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -50,7 +50,10 @@ export default function SignIn() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -65,7 +68,10 @@ export default function SignIn() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -98,7 +104,10 @@ export default function SignIn() {
           <div className="text-center">
             <span className="text-sm text-gray-600">
               Don&apos;t have an account?{" "}
-              <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+              <Link
+                href="/auth/signup"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
                 Sign up
               </Link>
             </span>
@@ -106,5 +115,5 @@ export default function SignIn() {
         </form>
       </div>
     </div>
-  )
+  );
 }

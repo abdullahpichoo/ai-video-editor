@@ -1,7 +1,7 @@
-import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
-import { getUsersCollection } from "@/lib/database"
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { getUsersCollection } from "@/lib/database";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -9,28 +9,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null
+          return null;
         }
 
         try {
-          const users = await getUsersCollection()
-          const user = await users.findOne({ email: credentials.email })
+          const users = await getUsersCollection();
+          const user = await users.findOne({ email: credentials.email });
 
           if (!user) {
-            return null
+            return null;
           }
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
             user.password
-          )
+          );
 
           if (!isPasswordValid) {
-            return null
+            return null;
           }
 
           return {
@@ -38,32 +38,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             name: user.name || null,
             image: user.image || null,
-          }
+          };
         } catch (error) {
-          console.error("Auth error:", error)
-          return null
+          console.error("Auth error:", error);
+          return null;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user.id
+        token.userId = user.id;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (token.userId) {
-        session.user.id = token.userId as string
+        session.user.id = token.userId as string;
       }
-      return session
-    }
+      return session;
+    },
   },
   pages: {
-    signIn: "/auth/signin"
-  }
-})
+    signIn: "/auth/signin",
+  },
+});
