@@ -4,6 +4,7 @@ import { ExportSettings } from './ExportSettings';
 
 // ==================== TYPE UNIONS AND HELPERS ====================
 export type CollectionName = 
+  | 'users'
   | 'userSessions'
   | 'mediaAssets' 
   | 'videoProjects'
@@ -20,8 +21,14 @@ export type SupportedMimeType =
   | 'image/jpeg';
 
 // ==================== DATABASE OPERATION TYPES ====================
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  name?: string;
+}
+
 export interface CreateMediaAssetInput {
-  sessionId: string;
+  userId: string;
   originalName: string;
   filename: string;
   fileSize: number;
@@ -36,7 +43,7 @@ export interface CreateMediaAssetInput {
 }
 
 export interface CreateVideoProjectInput {
-  sessionId: string;
+  userId: string;
   title: string;
   description?: string;
   timelineSettings: {
@@ -62,7 +69,7 @@ export interface UpdateProjectInput {
 
 // ==================== QUERY FILTERS ====================
 export interface MediaAssetFilter {
-  sessionId: string;
+  userId: string;
   mimeType?: SupportedMimeType[];
   isProcessing?: boolean;
   uploadedAfter?: Date;
@@ -70,14 +77,14 @@ export interface MediaAssetFilter {
 }
 
 export interface VideoProjectFilter {
-  sessionId: string;
+  userId: string;
   createdAfter?: Date;
   createdBefore?: Date;
   lastOpenedAfter?: Date;
 }
 
 export interface AIProcessingJobFilter {
-  sessionId: string;
+  userId: string;
   projectId?: string;
   type?: ('noise_removal' | 'subtitle_generation')[];
   status?: ('pending' | 'processing' | 'completed' | 'failed')[];

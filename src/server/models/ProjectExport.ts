@@ -4,7 +4,7 @@ import { ExportSettings } from './ExportSettings';
 export interface ProjectExport {
   _id?: ObjectId;
   exportId: string; // UUID for this export
-  sessionId: string;
+  userId: string; // References User._id
   projectId: string;
   
   // Export configuration

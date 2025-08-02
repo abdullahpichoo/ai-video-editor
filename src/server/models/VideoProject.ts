@@ -5,7 +5,7 @@ import { ExportSettings } from './ExportSettings';
 
 export interface VideoProject {
   _id?: ObjectId;
-  sessionId: string;
+  userId: string; // References User._id
   projectId: string; // UUID for this project
   
   // Project metadata

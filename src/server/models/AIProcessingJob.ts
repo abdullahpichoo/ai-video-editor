@@ -4,7 +4,7 @@ import { SubtitleItem } from './Subtitle';
 export interface AIProcessingJob {
   _id?: ObjectId;
   jobId: string; // UUID for this job
-  sessionId: string;
+  userId: string; // References User._id
   projectId: string;
   assetId: string; // Media asset being processed
   
@@ -22,12 +22,12 @@ export interface AIProcessingJob {
     generateTimestamps?: boolean;
   };
   
-  // Results
-  resultAssetId?: string; // New asset created from processing
-  subtitles?: SubtitleItem[]; // Generated subtitles
+  // Resul
+  resultAssetId?: string;
+  subtitles?: SubtitleItem[];
   
   // External API details
-  externalJobId?: string; // ID from external API (OpenAI, ElevenLabs, etc.)
+  externalJobId?: string;
   externalProvider: 'openai' | 'elevenlabs' | 'assemblyai' | 'deepgram';
   
   // Progress and error handling

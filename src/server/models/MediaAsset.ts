@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 
 export interface MediaAsset {
   _id?: ObjectId;
-  sessionId: string; // Links to user session
+  userId: string; // References User._id
   assetId: string; // UUID for this asset
   
   // File information

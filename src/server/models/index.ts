@@ -1,3 +1,5 @@
+// Core Models
+export type { User } from './User';
 export type { UserSession } from './UserSession';
 export type { MediaAsset } from './MediaAsset';
 export type { VideoProject } from './VideoProject';
@@ -14,6 +16,7 @@ export type {
   VideoFormat,
   ImageFormat,
   SupportedMimeType,
+  CreateUserInput,
   CreateMediaAssetInput,
   CreateVideoProjectInput,
   UpdateProjectInput,
