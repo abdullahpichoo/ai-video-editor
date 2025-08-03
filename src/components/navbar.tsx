@@ -1,12 +1,12 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Video, User, LogOut, FolderOpen } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
-  const { data: session, status } = useSession();
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <nav className="border-b bg-white">
@@ -24,11 +24,7 @@ export function Navbar() {
 
           {/* Navigation items */}
           <div className="flex items-center space-x-4">
-            {status === "loading" ? (
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-300 rounded w-20"></div>
-              </div>
-            ) : session ? (
+            {isAuthenticated ? (
               <>
                 {/* Projects link */}
                 <Link href="/projects">
@@ -48,14 +44,14 @@ export function Navbar() {
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-gray-600" />
                     <span className="text-sm text-gray-700">
-                      {session.user?.name || session.user?.email}
+                      {user?.name || user?.email}
                     </span>
                   </div>
 
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onClick={logout}
                     className="flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />

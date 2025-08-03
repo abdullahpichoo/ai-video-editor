@@ -31,7 +31,12 @@ export default function RootLayout({
       >
         <Providers>
           <Navbar />
-          {children}
+          <main
+            className="w-full flex flex-col"
+            style={{ minHeight: `calc(100vh - 4rem)` }}
+          >
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
