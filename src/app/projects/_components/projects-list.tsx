@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CreateProjectDialog } from "./create-project-dialog";
-import { VideoProject } from "@/server/models/VideoProject";
+import { VideoProject } from "@/models/VideoProject";
 import { Plus, Video, Calendar, Settings } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
