@@ -21,15 +21,7 @@ interface AssetsLibraryProps {
 
 export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
   const [selectedAsset, setSelectedAsset] = useState<IAsset | undefined>();
-  const {
-    assets,
-    uploadingAssets,
-    isLoading,
-    error,
-    uploadAsset,
-    deleteAsset,
-    retryUpload,
-  } = useAssets(projectId);
+  const { assets, uploadingAssets, isLoading, error, uploadAsset, deleteAsset, retryUpload } = useAssets(projectId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,9 +31,7 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
     }
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
@@ -61,9 +51,7 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
     <aside className="w-52 bg-white border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="p-3 border-b border-gray-200">
-        <h2 className="text-base font-semibold text-gray-900">
-          Assets Library
-        </h2>
+        <h2 className="text-base font-semibold text-gray-900">Assets Library</h2>
         <p className="text-xs text-gray-500">Upload and manage your files</p>
       </div>
 
@@ -91,19 +79,13 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
 
       {/* Assets List */}
       <div className="flex-1 overflow-y-auto">
-        {error && (
-          <div className="p-3 text-xs text-red-600 bg-red-50 border-b border-red-200">
-            {error}
-          </div>
-        )}
+        {error && <div className="p-3 text-xs text-red-600 bg-red-50 border-b border-red-200">{error}</div>}
 
         {isLoading && assets.length === 0 && (
-          <div className="p-3 text-xs text-gray-500 text-center">
-            Loading assets...
-          </div>
+          <div className="p-3 text-xs text-gray-500 text-center">Loading assets...</div>
         )}
 
-        <div className="p-3 space-y-2">
+        <div className="p-3 space-y-2 flex flex-col h-[20rem]">
           {allAssets.map((item) => {
             // Handle regular assets
             if ("assetId" in item) {
@@ -121,13 +103,7 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
 
             // Handle uploading assets
             const uploadingAsset = item as UploadingAsset;
-            return (
-              <AssetCard
-                key={uploadingAsset.id}
-                uploadingAsset={uploadingAsset}
-                onRetry={retryUpload}
-              />
-            );
+            return <AssetCard key={uploadingAsset.id} uploadingAsset={uploadingAsset} onRetry={retryUpload} />;
           })}
 
           {allAssets.length === 0 && !isLoading && (

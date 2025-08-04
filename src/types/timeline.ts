@@ -27,6 +27,10 @@ export interface ITimelineClip {
   startTime: number;
   duration: number;
 
+  // Original bounds for non-destructive trimming
+  originalStartTime: number;
+  originalEndTime: number;
+
   trimStart: number;
   trimEnd: number;
 

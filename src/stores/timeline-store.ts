@@ -7,7 +7,7 @@ interface ITimelineState {
   timeline: ITimeline;
   currentTime: number;
   isPlaying: boolean;
-  selectedClipIds: string[];
+  selectedClip: ITimelineClip | null;
 }
 
 interface ITimelineActions {
@@ -16,11 +16,12 @@ interface ITimelineActions {
   addTextClip: (text: string, duration?: number) => void;
   removeClip: (clipId: string) => void;
   removeClipsByAssetId: (assetId: string) => void;
-  moveClip?: (clipId: string, newStartTime: number) => void;
-  splitClip?: (clipId: string, splitTime: number) => void;
-  trimClip?: (clipId: string, newStartTime: number, newEndTime: number) => void;
-  deleteClip?: (clipId: string) => void;
-  selectClip?: (clipId: string) => void;
+  moveClip: (clipId: string, newStartTime: number) => void;
+  splitClip: (clipId: string, splitTime: number) => void;
+  trimClip: (clipId: string, newStartTime: number, newEndTime: number) => void;
+  trimSelectedClip: (newStartTime: number, newEndTime: number) => void;
+  deleteClip: (clipId: string) => void;
+  selectClip: (clipId: string) => void;
   clearSelection: () => void;
   updateClipTransform: (
     clipId: string,
@@ -95,7 +96,7 @@ const initialTimeline: ITimeline = {
 
 export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, get) => ({
   timeline: initialTimeline,
-  selectedClipIds: [],
+  selectedClip: null,
   currentTime: 0,
   isPlaying: false,
 
@@ -107,7 +108,7 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
       },
       currentTime: 0,
       isPlaying: false,
-      selectedClipIds: [],
+      selectedClip: null,
     });
   },
 
@@ -122,8 +123,18 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           return;
         }
 
+        // Calculate intended duration for the new clip
+        const intendedDuration = asset.type === "video" ? asset.duration : 2;
+
+        // Find position to place new clip (after the last clip)
         const lastClip = targetTrack.clips[targetTrack.clips.length - 1];
         const newClipStartTime = lastClip ? lastClip.startTime + lastClip.duration : 0;
+        const newClipEndTime = newClipStartTime + intendedDuration;
+
+        // Extend timeline duration if needed
+        if (newClipEndTime > state.timeline.duration) {
+          state.timeline.duration = newClipEndTime;
+        }
 
         const newClip: ITimelineClip = {
           id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -131,7 +142,9 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           trackId: targetTrack.id,
           type: asset.type,
           startTime: newClipStartTime,
-          duration: asset.type === "video" ? asset.duration : 2, // Default 2 seconds for non-video clips
+          duration: intendedDuration,
+          originalStartTime: newClipStartTime,
+          originalEndTime: newClipEndTime,
           trimStart: 0,
           trimEnd: 0,
           name: asset.originalName,
@@ -166,16 +179,13 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           selected: false,
         };
 
-        // Update timeline duration
-        state.timeline.duration = Math.max(state.timeline.duration, newClipStartTime + newClip.duration);
-
         // Add clip to target track
         targetTrack.clips.push(newClip);
 
-        // Update selected clips
-        state.selectedClipIds = [newClip.id];
+        // Update selected clip
+        state.selectedClip = newClip;
 
-        console.log(`Added clip ${newClip.name} to ${targetTrack.name}`);
+        console.log(`Added clip ${newClip.name} to ${targetTrack.name} (${intendedDuration}s)`);
       })
     );
   },
@@ -195,6 +205,8 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           type: "text",
           startTime: state.currentTime,
           duration: duration,
+          originalStartTime: state.currentTime,
+          originalEndTime: state.currentTime + duration,
           trimStart: 0,
           trimEnd: 0,
           name: `Text: ${text.slice(0, 20)}${text.length > 20 ? "..." : ""}`,
@@ -219,8 +231,8 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
         // Add clip to text track
         textTrack.clips.push(newClip);
 
-        // Update selected clips
-        state.selectedClipIds = [newClip.id];
+        // Update selected clip
+        state.selectedClip = newClip;
 
         console.log(`Added text clip: ${text}`);
       })
@@ -233,7 +245,10 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
         state.timeline.tracks.forEach((track: ITimelineTrack) => {
           track.clips = track.clips.filter((clip) => clip.id !== clipId);
         });
-        state.selectedClipIds = state.selectedClipIds.filter((id: string) => id !== clipId);
+        // Clear selection if the selected clip was removed
+        if (state.selectedClip?.id === clipId) {
+          state.selectedClip = null;
+        }
       })
     );
   },
@@ -241,26 +256,39 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
   removeClipsByAssetId: (assetId: string) => {
     set(
       produce((state) => {
+        const removedClipIds: string[] = [];
         state.timeline.tracks.forEach((track: ITimelineTrack) => {
+          const clipsToRemove = track.clips.filter((clip) => clip.assetId === assetId);
+          removedClipIds.push(...clipsToRemove.map((c) => c.id));
           track.clips = track.clips.filter((clip) => clip.assetId !== assetId);
         });
-        // Remove any selected clips that were just deleted
-        state.selectedClipIds = state.selectedClipIds.filter((clipId: string) => {
-          // Check if this clip still exists
-          return state.timeline.tracks.some((track: ITimelineTrack) =>
-            track.clips.some((clip: ITimelineClip) => clip.id === clipId)
-          );
-        });
+        // Clear selection if the selected clip was removed
+        if (state.selectedClip && removedClipIds.includes(state.selectedClip.id)) {
+          state.selectedClip = null;
+        }
       })
     );
   },
 
   selectClip: (clipId: string) => {
-    set({ selectedClipIds: [clipId] });
+    set(
+      produce((state) => {
+        // Find the clip across all tracks
+        for (const track of state.timeline.tracks) {
+          const clip = track.clips.find((c: ITimelineClip) => c.id === clipId);
+          if (clip) {
+            state.selectedClip = clip;
+            return;
+          }
+        }
+        // If clip not found, clear selection
+        state.selectedClip = null;
+      })
+    );
   },
 
   clearSelection: () => {
-    set({ selectedClipIds: [] });
+    set({ selectedClip: null });
   },
 
   updateClipTransform: (
@@ -312,5 +340,120 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
 
   pause: () => {
     set({ isPlaying: false });
+  },
+
+  moveClip: (clipId: string, newStartTime: number) => {
+    set(
+      produce((state) => {
+        for (const track of state.timeline.tracks) {
+          const clip = track.clips.find((c: ITimelineClip) => c.id === clipId);
+          if (clip) {
+            const sanitizedNewStartTime = Math.max(0, newStartTime);
+            const newEndTime = sanitizedNewStartTime + clip.duration;
+
+            // Calculate the movement delta
+            const deltaTime = sanitizedNewStartTime - clip.startTime;
+
+            // Update the clip position
+            clip.startTime = sanitizedNewStartTime;
+
+            // Update original bounds to maintain trim state relative to new position
+            clip.originalStartTime += deltaTime;
+            clip.originalEndTime += deltaTime;
+
+            // Update selected clip reference if it's the one being moved
+            if (state.selectedClip?.id === clipId) {
+              state.selectedClip = clip;
+            }
+
+            // Extend timeline duration if needed
+            if (newEndTime > state.timeline.duration) {
+              state.timeline.duration = newEndTime;
+            }
+            console.log(`Moved clip ${clipId} to start at ${sanitizedNewStartTime}s`);
+
+            break;
+          }
+        }
+      })
+    );
+  },
+
+  splitClip: (clipId: string, splitTime: number) => {
+    set(
+      produce((state) => {
+        for (const track of state.timeline.tracks) {
+          const clipIndex = track.clips.findIndex((c: ITimelineClip) => c.id === clipId);
+          if (clipIndex !== -1) {
+            const originalClip = track.clips[clipIndex];
+            const splitPoint = splitTime - originalClip.startTime;
+
+            // Only split if split point is within the clip
+            if (splitPoint > 0 && splitPoint < originalClip.duration) {
+              // Create the second half of the clip
+              const newClip: ITimelineClip = {
+                ...originalClip,
+                id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                startTime: splitTime,
+                duration: originalClip.duration - splitPoint,
+                trimStart: originalClip.trimStart + splitPoint,
+              };
+
+              // Update the first half
+              originalClip.duration = splitPoint;
+
+              // Insert the new clip after the original
+              track.clips.splice(clipIndex + 1, 0, newClip);
+            }
+            break;
+          }
+        }
+      })
+    );
+  },
+
+  trimSelectedClip: (newStartTime: number, newEndTime: number) => {
+    const selectedClip = get().selectedClip;
+    if (!selectedClip) return;
+    get().trimClip(selectedClip.id, newStartTime, newEndTime);
+  },
+
+  trimClip: (clipId: string, newStartTime: number, newEndTime: number) => {
+    set(
+      produce((state) => {
+        for (const track of state.timeline.tracks) {
+          const clip = track.clips.find((c: ITimelineClip) => c.id === clipId);
+          if (clip) {
+            // Constrain to original bounds for non-destructive trimming
+            const constrainedStartTime = Math.max(clip.originalStartTime, newStartTime);
+            const constrainedEndTime = Math.min(clip.originalEndTime, newEndTime);
+
+            const minimumDuration = 0.1;
+            const newDuration = constrainedEndTime - constrainedStartTime;
+            const isValidDuration = newDuration >= minimumDuration;
+
+            if (isValidDuration) {
+              clip.startTime = constrainedStartTime;
+              clip.duration = constrainedEndTime - constrainedStartTime;
+
+              // Calculate trim amounts relative to original bounds
+              clip.trimStart = constrainedStartTime - clip.originalStartTime;
+              clip.trimEnd = clip.originalEndTime - constrainedEndTime;
+
+              // Update selected clip reference if it's the one being trimmed
+              if (state.selectedClip?.id === clipId) {
+                state.selectedClip = clip;
+              }
+            }
+
+            break;
+          }
+        }
+      })
+    );
+  },
+
+  deleteClip: (clipId: string) => {
+    get().removeClip(clipId);
   },
 }));
