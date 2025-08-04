@@ -1,15 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Scissors, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Scissors, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { formatTime } from "../_utils/timeline";
+import { ITimelineClip } from "@/types/timeline";
 
 interface TimelineControlsProps {
   currentTime: number;
   totalDuration: number;
   isPlaying: boolean;
   zoom: number;
-  selectedClipIds: string[];
+  selectedClip: ITimelineClip | null;
   onPlay: () => void;
   onPause: () => void;
   onSeekToStart: () => void;
@@ -17,6 +18,7 @@ interface TimelineControlsProps {
   onSplitAtPlayhead: () => void;
   onTrimStartToPlayhead: () => void;
   onTrimEndToPlayhead: () => void;
+  onDeleteClip: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }
@@ -26,7 +28,7 @@ export const TimelineControls = ({
   totalDuration,
   isPlaying,
   zoom,
-  selectedClipIds,
+  selectedClip,
   onPlay,
   onPause,
   onSeekToStart,
@@ -34,9 +36,11 @@ export const TimelineControls = ({
   onSplitAtPlayhead,
   onTrimStartToPlayhead,
   onTrimEndToPlayhead,
+  onDeleteClip,
   onZoomIn,
   onZoomOut,
 }: TimelineControlsProps) => {
+  const hasSelectedClip = selectedClip !== null;
   return (
     <div className="h-[12%] bg-card border-b border-border flex items-center justify-center px-4 gap-4">
       <Button variant="outline" size="sm" onClick={onSeekToStart}>
@@ -55,15 +59,28 @@ export const TimelineControls = ({
         variant="outline"
         size="sm"
         onClick={onSplitAtPlayhead}
-        disabled={selectedClipIds.length === 0}
+        disabled={!hasSelectedClip}
         className="w-8 h-8 p-0"
-        title="Split selected clips at playhead"
+        title="Split selected clip at playhead"
       >
         <Scissors className="w-4 h-4" />
       </Button>
 
-      {/* Trim buttons - only show when clips are selected */}
-      {selectedClipIds.length > 0 && (
+      {/* Delete button - only show when clip is selected */}
+      {hasSelectedClip && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onDeleteClip}
+          className="w-8 h-8 p-0 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+          title="Delete selected clip"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      )}
+
+      {/* Trim buttons - only show when clip is selected */}
+      {hasSelectedClip && (
         <>
           <Button
             variant="outline"

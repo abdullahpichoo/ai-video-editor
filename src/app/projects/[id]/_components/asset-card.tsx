@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Trash2,
-  Upload,
-  AlertCircle,
-  Video,
-  Image as ImageIcon,
-  Music,
-} from "lucide-react";
+import { Trash2, Upload, AlertCircle, Video, Image as ImageIcon, Music } from "lucide-react";
 import { IAsset } from "@/types/asset";
 import { useTimelineStore } from "@/stores/timeline-store";
 
@@ -29,14 +22,7 @@ interface AssetCardProps {
   onSelect?: () => void;
 }
 
-export function AssetCard({
-  asset,
-  uploadingAsset,
-  onDelete,
-  onRetry,
-  isSelected,
-  onSelect,
-}: AssetCardProps) {
+export function AssetCard({ asset, uploadingAsset, onDelete, onRetry, isSelected, onSelect }: AssetCardProps) {
   const { addClip } = useTimelineStore();
 
   const isUploading = !!uploadingAsset;
@@ -47,15 +33,16 @@ export function AssetCard({
   const size = asset?.fileSize || uploadingAsset?.file?.size || 0;
 
   const getTypeIcon = () => {
+    const size = "w-3 h-3";
     switch (type) {
       case "video":
-        return <Video className="w-4 h-4" />;
+        return <Video className={size} />;
       case "image":
-        return <ImageIcon className="w-4 h-4" />;
+        return <ImageIcon className={size} />;
       case "audio":
-        return <Music className="w-4 h-4" />;
+        return <Music className={size} />;
       default:
-        return <Video className="w-4 h-4" />;
+        return <Video className={size} />;
     }
   };
 
@@ -104,11 +91,7 @@ export function AssetCard({
     <div
       className={`
         relative p-3 border rounded-lg cursor-pointer transition-all
-        ${
-          isSelected
-            ? "border-blue-500 bg-blue-50"
-            : "border-gray-200 hover:border-gray-300"
-        }
+        ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}
         ${!canSelect ? "opacity-60 cursor-not-allowed" : ""}
       `}
       onClick={canSelect ? onSelect : undefined}
@@ -116,16 +99,14 @@ export function AssetCard({
     >
       {/* Type Badge */}
       <div
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium mb-2 ${getTypeColor()}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-[10px] font-medium mb-2 ${getTypeColor()}`}
       >
         {getTypeIcon()}
         {type.toUpperCase()}
       </div>
 
       {/* File Name */}
-      <div className="text-sm font-medium text-gray-900 truncate mb-1">
-        {name}
-      </div>
+      <div className="text-sm font-medium text-gray-900 truncate mb-1">{name}</div>
 
       {/* File Size */}
       <div className="text-xs text-gray-500 mb-2">{formatFileSize(size)}</div>
@@ -153,15 +134,8 @@ export function AssetCard({
             <AlertCircle className="w-3 h-3" />
             Upload failed
           </div>
-          {uploadingAsset.error && (
-            <div className="text-xs text-gray-500 mb-2">
-              {uploadingAsset.error}
-            </div>
-          )}
-          <button
-            onClick={handleRetry}
-            className="text-xs text-blue-600 hover:text-blue-700 underline"
-          >
+          {uploadingAsset.error && <div className="text-xs text-gray-500 mb-2">{uploadingAsset.error}</div>}
+          <button onClick={handleRetry} className="text-xs text-blue-600 hover:text-blue-700 underline">
             Retry upload
           </button>
         </div>

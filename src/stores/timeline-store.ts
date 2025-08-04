@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { produce } from "immer";
 import { IAsset } from "@/types/asset";
-import { ITimeline, ITimelineClip, ITimelineTrack } from "@/types/timeline";
+import { ITimeline, ITimelineClip, ITimelineTrack, ISubtitleStyle } from "@/types/timeline";
 
 interface ITimelineState {
   timeline: ITimeline;
@@ -13,7 +13,7 @@ interface ITimelineState {
 interface ITimelineActions {
   initializeTimeline: (projectId: string, timeline?: ITimeline) => void;
   addClip: (asset: IAsset) => void;
-  addTextClip: (text: string, duration?: number) => void;
+  addTextClip: (text: string, style?: ISubtitleStyle, duration?: number) => void;
   removeClip: (clipId: string) => void;
   removeClipsByAssetId: (assetId: string) => void;
   moveClip: (clipId: string, newStartTime: number) => void;
@@ -33,6 +33,13 @@ interface ITimelineActions {
       scaleX: number;
       scaleY: number;
       rotation: number;
+    }>
+  ) => void;
+  updateClipProperties: (
+    clipId: string,
+    properties: Partial<{
+      text: string;
+      style: ISubtitleStyle;
     }>
   ) => void;
   setCurrentTime: (time: number) => void;
@@ -184,13 +191,11 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
 
         // Update selected clip
         state.selectedClip = newClip;
-
-        console.log(`Added clip ${newClip.name} to ${targetTrack.name} (${intendedDuration}s)`);
       })
     );
   },
 
-  addTextClip: (text: string, duration: number = 3) => {
+  addTextClip: (text: string, style?: ISubtitleStyle, duration: number = 3) => {
     set(
       produce((state) => {
         const textTrack = state.timeline.tracks.find((track: ITimelineTrack) => track.type === "text");
@@ -198,6 +203,17 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           console.warn("No text track found");
           return;
         }
+
+        const defaultStyle: ISubtitleStyle = {
+          fontSize: 24,
+          fontFamily: "Arial",
+          color: "#ffffff",
+          backgroundColor: "#000000",
+          position: "center",
+          alignment: "center",
+          outline: false,
+          shadow: false,
+        };
 
         const newClip: ITimelineClip = {
           id: `text-clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -211,6 +227,7 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           trimEnd: 0,
           name: `Text: ${text.slice(0, 20)}${text.length > 20 ? "..." : ""}`,
           text: text,
+          style: style || defaultStyle,
           transform: {
             x: 320, // Center of 640px canvas
             y: 280, // Near bottom of 360px canvas
@@ -233,8 +250,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
 
         // Update selected clip
         state.selectedClip = newClip;
-
-        console.log(`Added text clip: ${text}`);
       })
     );
   },
@@ -342,6 +357,36 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
     set({ isPlaying: false });
   },
 
+  updateClipProperties: (
+    clipId: string,
+    properties: Partial<{
+      text: string;
+      style: ISubtitleStyle;
+    }>
+  ) => {
+    set(
+      produce((state) => {
+        for (const track of state.timeline.tracks) {
+          const clip = track.clips.find((c: ITimelineClip) => c.id === clipId);
+          if (clip) {
+            if (properties.text !== undefined) {
+              clip.text = properties.text;
+            }
+            if (properties.style !== undefined) {
+              clip.style = properties.style;
+            }
+
+            // Update selectedClip reference if it's the one being modified
+            if (state.selectedClip?.id === clipId) {
+              state.selectedClip = { ...clip }; // Create new reference to trigger re-render
+            }
+            break;
+          }
+        }
+      })
+    );
+  },
+
   moveClip: (clipId: string, newStartTime: number) => {
     set(
       produce((state) => {
@@ -370,7 +415,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
             if (newEndTime > state.timeline.duration) {
               state.timeline.duration = newEndTime;
             }
-            console.log(`Moved clip ${clipId} to start at ${sanitizedNewStartTime}s`);
 
             break;
           }

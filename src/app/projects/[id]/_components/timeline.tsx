@@ -45,26 +45,6 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const shouldDelete = e.key === "Delete" || e.key === "Backspace";
-      const shouldSplit = e.key === "s" && selectedClip;
-
-      if (shouldDelete && selectedClip) {
-        deleteClip(selectedClip.id);
-      } else if (shouldSplit && selectedClip) {
-        if (currentTime > selectedClip.startTime && currentTime < selectedClip.startTime + selectedClip.duration) {
-          splitClip(selectedClip.id, currentTime);
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [selectedClip, deleteClip, splitClip, currentTime]);
-
   // Animate playhead during playback
   useEffect(() => {
     let animationFrame: number;
@@ -177,8 +157,8 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
   const handleTrimStartToPlayhead = useCallback(() => {
     if (!selectedClip) return;
 
-    const withinBounds =
-      currentTime > selectedClip.originalStartTime && currentTime < selectedClip.startTime + selectedClip.duration;
+    // const withinBounds =
+    //   currentTime > selectedClip.originalStartTime && currentTime < selectedClip.startTime + selectedClip.duration;
     // if (!withinBounds) return;
 
     const newStartTime = currentTime;
@@ -189,7 +169,7 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
   const handleTrimEndToPlayhead = useCallback(() => {
     if (!selectedClip) return;
 
-    const withinBounds = currentTime > selectedClip.startTime && currentTime < selectedClip.originalEndTime;
+    // const withinBounds = currentTime > selectedClip.startTime && currentTime < selectedClip.originalEndTime;
     // if (!withinBounds) return;
 
     const newStartTime = selectedClip.startTime;
@@ -268,7 +248,7 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
         totalDuration={timeline.duration}
         isPlaying={isPlaying}
         zoom={zoom}
-        selectedClipIds={selectedClip ? [selectedClip.id] : []}
+        selectedClip={selectedClip}
         onPlay={play}
         onPause={pause}
         onSeekToStart={() => setCurrentTime(0)}
@@ -276,6 +256,7 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
         onSplitAtPlayhead={handleSplitAtPlayhead}
         onTrimStartToPlayhead={handleTrimStartToPlayhead}
         onTrimEndToPlayhead={handleTrimEndToPlayhead}
+        onDeleteClip={() => selectedClip && deleteClip(selectedClip.id)}
         onZoomIn={() => setZoom((prev) => Math.min(MAX_ZOOM, prev * 1.25))}
         onZoomOut={() => setZoom((prev) => Math.max(MIN_ZOOM, prev * 0.8))}
       />

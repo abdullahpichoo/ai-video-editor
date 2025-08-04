@@ -7,6 +7,8 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { ITimelineClip } from "@/types/timeline";
 import { useMediaPreview } from "../_hooks/use-media-preview";
 import { useMediaElementSync } from "../_hooks/use-media-element-sync";
+import { MediaToolbar } from "./media-toolbar";
+import { ISubtitleStyle } from "@/types/timeline";
 
 interface MediaPreviewProps {
   width?: number;
@@ -72,11 +74,14 @@ const MediaElement = React.memo(
         case "text":
           return (
             <div
-              className="w-full h-full flex items-center justify-center text-white font-bold text-center p-2"
+              className="w-full h-full flex items-center justify-center font-bold text-center p-2"
               style={{
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                fontSize: Math.max(12, currentDimensions.height * 0.15),
+                backgroundColor: clip.style?.backgroundColor || "rgba(0, 0, 0, 0.7)",
+                color: clip.style?.color || "#ffffff",
+                fontSize: clip.style?.fontSize || Math.max(12, currentDimensions.height * 0.15),
+                fontFamily: clip.style?.fontFamily || "Arial",
                 borderRadius: "4px",
+                textAlign: clip.style?.alignment || "center",
               }}
             >
               {clip.text || "Text"}
@@ -208,45 +213,48 @@ export function MediaPreview({
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div
-        className="relative bg-background border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg"
-        style={{
-          width: containerWidth,
-          height: containerHeight,
-        }}
-      >
-        {activeClips.map(({ clip, zIndex }) => (
-          <MediaElement
-            key={`${clip.id}`}
-            clip={clip}
-            containerWidth={containerWidth}
-            containerHeight={containerHeight}
-            zIndex={zIndex}
-            onVideoRef={setVideoRef}
-            onAudioRef={setAudioRef}
-          />
-        ))}
+    <div className="flex flex-col gap-0">
+      {/* Preview Container */}
+      <div className="flex flex-col items-center gap-4 p-4">
+        <div
+          className="relative bg-background border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg"
+          style={{
+            width: containerWidth,
+            height: containerHeight,
+          }}
+        >
+          {activeClips.map(({ clip, zIndex }) => (
+            <MediaElement
+              key={`${clip.id}`}
+              clip={clip}
+              containerWidth={containerWidth}
+              containerHeight={containerHeight}
+              zIndex={zIndex}
+              onVideoRef={setVideoRef}
+              onAudioRef={setAudioRef}
+            />
+          ))}
 
-        {activeClips.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <div className="text-lg font-medium">No media at current time</div>
-              <div className="text-sm">Add clips to the timeline to see preview</div>
-              <div className="text-xs text-gray-500 mt-2">Time: {currentTime.toFixed(2)}s</div>
+          {activeClips.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <div className="text-lg font-medium">No media at current time</div>
+                <div className="text-sm">Add clips to the timeline to see preview</div>
+                <div className="text-xs text-gray-500 mt-2">Time: {currentTime.toFixed(2)}s</div>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      <div className="text-xs text-muted-foreground text-center">
-        <div>
-          Project: {projectWidth} × {projectHeight}px (Aspect: {aspectRatio.toFixed(2)})
+        <div className="text-xs text-muted-foreground text-center">
+          <div>
+            Project: {projectWidth} × {projectHeight}px (Aspect: {aspectRatio.toFixed(2)})
+          </div>
+          <div>
+            Preview: {Math.round(containerWidth)} × {Math.round(containerHeight)} px
+          </div>
+          <div>Active clips: {activeClips.length}</div>
         </div>
-        <div>
-          Preview: {Math.round(containerWidth)} × {Math.round(containerHeight)} px
-        </div>
-        <div>Active clips: {activeClips.length}</div>
       </div>
     </div>
   );
