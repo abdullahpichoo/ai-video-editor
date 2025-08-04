@@ -165,37 +165,38 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
   };
 
   const handleSplitAtPlayhead = useCallback(() => {
-    if (
-      selectedClip &&
-      currentTime > selectedClip.startTime &&
-      currentTime < selectedClip.startTime + selectedClip.duration
-    ) {
-      splitClip(selectedClip.id, currentTime);
-    }
+    if (!selectedClip) return;
+
+    const withinBounds =
+      currentTime > selectedClip.startTime && currentTime < selectedClip.startTime + selectedClip.duration;
+    if (!withinBounds) return;
+
+    splitClip(selectedClip.id, currentTime);
   }, [selectedClip, currentTime, splitClip]);
 
   const handleTrimStartToPlayhead = useCallback(() => {
-    if (
-      selectedClip &&
-      currentTime > selectedClip.originalStartTime &&
-      currentTime < selectedClip.startTime + selectedClip.duration
-    ) {
-      const newStartTime = currentTime;
-      const newEndTime = selectedClip.startTime + selectedClip.duration;
-      trimSelectedClip(newStartTime, newEndTime);
-    }
+    if (!selectedClip) return;
+
+    const withinBounds =
+      currentTime > selectedClip.originalStartTime && currentTime < selectedClip.startTime + selectedClip.duration;
+    // if (!withinBounds) return;
+
+    const newStartTime = currentTime;
+    const newEndTime = selectedClip.startTime + selectedClip.duration;
+    trimSelectedClip(newStartTime, newEndTime);
   }, [selectedClip, currentTime, trimSelectedClip]);
 
-  // Handle trim clip end to playhead
   const handleTrimEndToPlayhead = useCallback(() => {
-    if (selectedClip && currentTime > selectedClip.startTime && currentTime < selectedClip.originalEndTime) {
-      const newStartTime = selectedClip.startTime;
-      const newEndTime = currentTime;
-      trimSelectedClip(newStartTime, newEndTime);
-    }
+    if (!selectedClip) return;
+
+    const withinBounds = currentTime > selectedClip.startTime && currentTime < selectedClip.originalEndTime;
+    // if (!withinBounds) return;
+
+    const newStartTime = selectedClip.startTime;
+    const newEndTime = currentTime;
+    trimSelectedClip(newStartTime, newEndTime);
   }, [selectedClip, currentTime, trimSelectedClip]);
 
-  // Stable clip click handler
   const handleClipClick = useCallback(
     (e: React.MouseEvent, clipId: string) => {
       e.stopPropagation();
@@ -204,24 +205,20 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
     [selectClip]
   );
 
-  // Handle playhead drag
   const handlePlayheadMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDraggingPlayhead(true);
   };
 
-  // Handle mouse wheel for zoom and scroll - simplified for performance
   const handleContainerWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
       if (e.ctrlKey || e.metaKey) {
-        // Zoom with Ctrl/Cmd + wheel
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
         setZoom((prev) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev * zoomFactor)));
       } else {
-        // Scroll horizontally - direct state update for better performance
         const scrollSpeed = 0.5;
         const deltaTime = (e.deltaY / 100) * scrollSpeed;
         setScrollX((prev) => {
@@ -233,11 +230,6 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
     [zoom, timeline.duration]
   );
 
-  // Track color mapping
-
-  // Get clip colors
-
-  // Generate time markers for ruler
   const generateTimeMarkers = () => {
     const markers = [];
     const visibleDuration = VISIBLE_DURATION / zoom;
@@ -263,6 +255,7 @@ export const Timeline = ({ height = 320 }: Omit<TimelineProps, "width">) => {
     }
     return markers;
   };
+
   return (
     <div
       className="bg-background border-t border-border w-full h-full"

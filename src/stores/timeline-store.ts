@@ -124,7 +124,7 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
         }
 
         // Calculate intended duration for the new clip
-        const intendedDuration = asset.type === "video" ? asset.duration : 2;
+        const intendedDuration = ["audio", "video"].includes(asset.type) ? asset.duration : 2;
 
         // Find position to place new clip (after the last clip)
         const lastClip = targetTrack.clips[targetTrack.clips.length - 1];
