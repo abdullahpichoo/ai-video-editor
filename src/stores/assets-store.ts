@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { IAsset } from "@/types/asset";
+import { IAsset } from "@/types/asset.types";
 import { useTimelineStore } from "./timeline-store";
 
 interface UploadingAsset {

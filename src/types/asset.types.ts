@@ -1,4 +1,4 @@
-import { IApiResponse } from "./api-response";
+import { IApiResponse } from "./api-response.types";
 
 export interface IAsset {
   assetId: string;

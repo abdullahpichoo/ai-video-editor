@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { useAssets } from "../_api/use-assets";
 import { AssetCard } from "./asset-card";
-import { IAsset } from "@/types/asset";
+import { IAsset } from "@/types/asset.types";
+import { MEDIA_LIMITS } from "../_hooks/use-media-processing";
 
 interface UploadingAsset {
   id: string;
@@ -24,6 +25,12 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
   const { assets, uploadingAssets, isLoading, error, uploadAsset, deleteAsset, retryUpload } = useAssets(projectId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const acceptedMimeTypes = [
+    ...MEDIA_LIMITS.video.mimeTypes,
+    ...MEDIA_LIMITS.image.mimeTypes,
+    ...MEDIA_LIMITS.audio.mimeTypes,
+  ].join(",");
 
   const handleFileSelect = () => {
     if (fileInputRef.current) {
@@ -71,7 +78,7 @@ export function AssetsLibrary({ projectId }: AssetsLibraryProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="video/*,image/*,audio/*"
+          accept={acceptedMimeTypes}
           onChange={handleFileUpload}
           className="hidden"
         />

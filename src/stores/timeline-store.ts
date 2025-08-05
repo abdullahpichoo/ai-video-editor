@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { produce } from "immer";
-import { IAsset } from "@/types/asset";
-import { ITimeline, ITimelineClip, ITimelineTrack, ISubtitleStyle } from "@/types/timeline";
+import { IAsset } from "@/types/asset.types";
+import { ITimeline, ITimelineClip, ITimelineTrack, ISubtitleStyle } from "@/types/timeline.types";
+import { ISubtitleSegment } from "@/types/ai-job.types";
 
 interface ITimelineState {
   timeline: ITimeline;
@@ -45,6 +46,12 @@ interface ITimelineActions {
   setCurrentTime: (time: number) => void;
   play: () => void;
   pause: () => void;
+
+  // Subtitle-related methods
+  addSubtitleClips: (assetId: string, subtitles: ISubtitleSegment[]) => void;
+  findAssetClips: (assetId: string) => ITimelineClip[];
+  calculateTimelinePosition: (assetId: string, assetTime: number) => number | null;
+  ensureSubtitleTrack: () => string;
 }
 
 const tracks: ITimelineTrack[] = [
@@ -94,6 +101,17 @@ const tracks: ITimelineTrack[] = [
   },
 ];
 
+const defaultTextStyle: ISubtitleStyle = {
+  fontSize: 18,
+  fontFamily: "Arial",
+  color: "#000000",
+  backgroundColor: "#ffffff",
+  position: "center",
+  alignment: "center",
+  outline: false,
+  shadow: false,
+};
+
 const initialTimeline: ITimeline = {
   id: "default-timeline",
   projectId: "",
@@ -121,7 +139,7 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
 
   addClip: (asset: IAsset) => {
     set(
-      produce((state) => {
+      produce((state: ITimelineState) => {
         const targetTrackType = asset.type;
         const targetTrack = state.timeline.tracks.find((track: ITimelineTrack) => track.type === targetTrackType);
 
@@ -130,12 +148,11 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           return;
         }
 
-        // Calculate intended duration for the new clip
-        const intendedDuration = ["audio", "video"].includes(asset.type) ? asset.duration : 2;
+        const nonMultimediaAssetDuration = 2;
+        const intendedDuration = ["audio", "video"].includes(asset.type) ? asset.duration : nonMultimediaAssetDuration;
 
-        // Find position to place new clip (after the last clip)
         const lastClip = targetTrack.clips[targetTrack.clips.length - 1];
-        const newClipStartTime = lastClip ? lastClip.startTime + lastClip.duration : 0;
+        const newClipStartTime = lastClip ? lastClip.trimEnd : 0;
         const newClipEndTime = newClipStartTime + intendedDuration;
 
         // Extend timeline duration if needed
@@ -152,10 +169,9 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           duration: intendedDuration,
           originalStartTime: newClipStartTime,
           originalEndTime: newClipEndTime,
-          trimStart: 0,
-          trimEnd: 0,
+          trimStart: newClipStartTime,
+          trimEnd: newClipEndTime,
           name: asset.originalName,
-          // Embed asset properties for performance
           assetPath: asset.storagePath,
           assetName: asset.originalName,
           assetDimensions: asset.dimensions,
@@ -186,10 +202,8 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           selected: false,
         };
 
-        // Add clip to target track
         targetTrack.clips.push(newClip);
 
-        // Update selected clip
         state.selectedClip = newClip;
       })
     );
@@ -204,17 +218,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           return;
         }
 
-        const defaultStyle: ISubtitleStyle = {
-          fontSize: 24,
-          fontFamily: "Arial",
-          color: "#ffffff",
-          backgroundColor: "#000000",
-          position: "center",
-          alignment: "center",
-          outline: false,
-          shadow: false,
-        };
-
         const newClip: ITimelineClip = {
           id: `text-clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           trackId: textTrack.id,
@@ -223,11 +226,11 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           duration: duration,
           originalStartTime: state.currentTime,
           originalEndTime: state.currentTime + duration,
-          trimStart: 0,
-          trimEnd: 0,
+          trimStart: state.currentTime,
+          trimEnd: state.currentTime + duration,
           name: `Text: ${text.slice(0, 20)}${text.length > 20 ? "..." : ""}`,
           text: text,
-          style: style || defaultStyle,
+          style: style || defaultTextStyle,
           transform: {
             x: 320, // Center of 640px canvas
             y: 280, // Near bottom of 360px canvas
@@ -242,13 +245,10 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           selected: false,
         };
 
-        // Update timeline duration
         state.timeline.duration = Math.max(state.timeline.duration, newClip.startTime + newClip.duration);
 
-        // Add clip to text track
         textTrack.clips.push(newClip);
 
-        // Update selected clip
         state.selectedClip = newClip;
       })
     );
@@ -260,7 +260,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
         state.timeline.tracks.forEach((track: ITimelineTrack) => {
           track.clips = track.clips.filter((clip) => clip.id !== clipId);
         });
-        // Clear selection if the selected clip was removed
         if (state.selectedClip?.id === clipId) {
           state.selectedClip = null;
         }
@@ -277,7 +276,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
           removedClipIds.push(...clipsToRemove.map((c) => c.id));
           track.clips = track.clips.filter((clip) => clip.assetId !== assetId);
         });
-        // Clear selection if the selected clip was removed
         if (state.selectedClip && removedClipIds.includes(state.selectedClip.id)) {
           state.selectedClip = null;
         }
@@ -296,7 +294,6 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
             return;
           }
         }
-        // If clip not found, clear selection
         state.selectedClip = null;
       })
     );
@@ -376,9 +373,8 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
               clip.style = properties.style;
             }
 
-            // Update selectedClip reference if it's the one being modified
             if (state.selectedClip?.id === clipId) {
-              state.selectedClip = { ...clip }; // Create new reference to trigger re-render
+              state.selectedClip = { ...clip };
             }
             break;
           }
@@ -396,17 +392,10 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
             const sanitizedNewStartTime = Math.max(0, newStartTime);
             const newEndTime = sanitizedNewStartTime + clip.duration;
 
-            // Calculate the movement delta
-            const deltaTime = sanitizedNewStartTime - clip.startTime;
-
-            // Update the clip position
             clip.startTime = sanitizedNewStartTime;
+            clip.trimStart = sanitizedNewStartTime;
+            clip.trimEnd = sanitizedNewStartTime + clip.duration;
 
-            // Update original bounds to maintain trim state relative to new position
-            clip.originalStartTime += deltaTime;
-            clip.originalEndTime += deltaTime;
-
-            // Update selected clip reference if it's the one being moved
             if (state.selectedClip?.id === clipId) {
               state.selectedClip = clip;
             }
@@ -440,11 +429,23 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
                 id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 startTime: splitTime,
                 duration: originalClip.duration - splitPoint,
+                // For the second half: trim start increases by the split point
                 trimStart: originalClip.trimStart + splitPoint,
+                // trimEnd remains the same as it represents end trim from original media
+                trimEnd: originalClip.trimEnd,
+                // Original bounds shift by the amount we're trimming from the start
+                originalStartTime: originalClip.originalStartTime + splitPoint,
+                originalEndTime: originalClip.originalEndTime,
               };
 
               // Update the first half
               originalClip.duration = splitPoint;
+              // For the first half: trimEnd needs to be updated to reflect the new end point
+              // trimEnd represents how much is trimmed from the end of the original media
+              const originalMediaDuration = originalClip.originalEndTime - originalClip.originalStartTime;
+              const newEndPointInOriginalMedia = originalClip.trimStart + splitPoint;
+              originalClip.trimEnd = originalMediaDuration - newEndPointInOriginalMedia;
+              // originalStartTime and trimStart remain unchanged for the first half
 
               // Insert the new clip after the original
               track.clips.splice(clipIndex + 1, 0, newClip);
@@ -480,9 +481,8 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
               clip.startTime = constrainedStartTime;
               clip.duration = constrainedEndTime - constrainedStartTime;
 
-              // Calculate trim amounts relative to original bounds
               clip.trimStart = constrainedStartTime - clip.originalStartTime;
-              clip.trimEnd = clip.originalEndTime - constrainedEndTime;
+              clip.trimEnd = constrainedEndTime;
 
               // Update selected clip reference if it's the one being trimmed
               if (state.selectedClip?.id === clipId) {
@@ -499,5 +499,137 @@ export const useTimelineStore = create<ITimelineState & ITimelineActions>((set, 
 
   deleteClip: (clipId: string) => {
     get().removeClip(clipId);
+  },
+
+  addSubtitleClips: (assetId: string, subtitles: ISubtitleSegment[]) => {
+    set(
+      produce((state: ITimelineState) => {
+        const assetClips = get().findAssetClips(assetId);
+
+        if (assetClips.length === 0) {
+          console.warn(`No clips found for asset ${assetId}`);
+          return;
+        }
+
+        // For now, use the first clip if multiple exist
+        // TODO: Add UI for clip selection when multiple clips exist
+
+        // Ensure subtitle track exists
+        const subtitleTrackId = get().ensureSubtitleTrack();
+        const subtitleTrack = state.timeline.tracks.find((track) => track.type === "text");
+
+        if (!subtitleTrack) {
+          console.error("Failed to create subtitle track");
+          return;
+        }
+
+        // Convert subtitle segments to timeline clips
+        subtitles.forEach((subtitle, index) => {
+          const timelinePosition = get().calculateTimelinePosition(assetId, subtitle.startTime);
+
+          if (timelinePosition === null) {
+            console.warn(`Could not calculate timeline position for subtitle ${index}`);
+            return;
+          }
+
+          const subtitleClip: ITimelineClip = {
+            id: `subtitle-${assetId}-${index}-${Date.now()}`,
+            trackId: subtitleTrackId,
+            type: "text",
+            startTime: timelinePosition,
+            duration: subtitle.endTime - subtitle.startTime,
+            originalStartTime: timelinePosition,
+            originalEndTime: timelinePosition + (subtitle.endTime - subtitle.startTime),
+            trimStart: 0,
+            trimEnd: 0,
+            text: subtitle.text,
+            name: `Subtitle ${index + 1}`,
+            volume: 1,
+            locked: false,
+            selected: false,
+            style: defaultTextStyle,
+          };
+
+          subtitleTrack.clips.push(subtitleClip);
+        });
+
+        // Sort clips by start time
+        subtitleTrack.clips.sort((a, b) => a.startTime - b.startTime);
+      })
+    );
+  },
+
+  findAssetClips: (assetId: string) => {
+    const state = get();
+    const clips: ITimelineClip[] = [];
+
+    state.timeline.tracks.forEach((track) => {
+      track.clips.forEach((clip) => {
+        if (clip.assetId === assetId) {
+          clips.push(clip);
+        }
+      });
+    });
+
+    return clips.sort((a, b) => a.startTime - b.startTime);
+  },
+
+  calculateTimelinePosition: (assetId: string, assetTime: number) => {
+    const assetClips = get().findAssetClips(assetId);
+
+    if (assetClips.length === 0) {
+      return null;
+    }
+
+    // For now, use the first clip if multiple exist
+    const targetClip = assetClips[0];
+
+    // Calculate position relative to the clip's start time
+    // Account for trim start when calculating relative position
+    // TODO: use the targetClip's actual startTime
+    const relativePosition = Math.max(assetTime - targetClip.trimStart, 0);
+
+    // // Ensure the subtitle is within the clip's bounds
+    // if (relativePosition < 0 || relativePosition > targetClip.duration) {
+    //   return null;
+    // }
+
+    return targetClip.startTime + relativePosition;
+  },
+
+  ensureSubtitleTrack: () => {
+    const state = get();
+
+    // Check if subtitle track already exists
+    const existingSubtitleTrack = state.timeline.tracks.find(
+      (track) => track.type === "text" && track.name === "Subtitles"
+    );
+
+    if (existingSubtitleTrack) {
+      return existingSubtitleTrack.id;
+    }
+
+    // Create new subtitle track
+    const subtitleTrackId = `track-subtitles-${Date.now()}`;
+
+    set(
+      produce((state: ITimelineState) => {
+        const newTrack: ITimelineTrack = {
+          id: subtitleTrackId,
+          name: "Subtitles",
+          type: "text",
+          clips: [],
+          layerIndex: state.timeline.tracks.length, // Add at the end
+          isVisible: true,
+          isMuted: false,
+          volume: 1,
+          locked: false,
+        };
+
+        state.timeline.tracks.push(newTrack);
+      })
+    );
+
+    return subtitleTrackId;
   },
 }));

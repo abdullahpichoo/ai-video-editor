@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AuthBoundaryProps {
   children: React.ReactNode;
@@ -10,20 +10,14 @@ interface AuthBoundaryProps {
   redirectTo?: string;
 }
 
-export function AuthBoundary({
-  children,
-  fallback,
-  redirectTo = "/auth/signin",
-}: AuthBoundaryProps) {
+export function AuthBoundary({ children, fallback, redirectTo = "/auth/signin" }: AuthBoundaryProps) {
   const { isAuthenticated, isInitialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (isInitialized && !isAuthenticated) {
       const currentPath = window.location.pathname;
-      const signInUrl = `${redirectTo}?callbackUrl=${encodeURIComponent(
-        currentPath
-      )}`;
+      const signInUrl = `${redirectTo}?callbackUrl=${encodeURIComponent(currentPath)}`;
       router.push(signInUrl);
     }
   }, [isAuthenticated, isInitialized, router, redirectTo]);
@@ -35,9 +29,7 @@ export function AuthBoundary({
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-            <p className="text-gray-600">
-              {!isInitialized ? "Loading..." : "Redirecting to sign in..."}
-            </p>
+            <p className="text-gray-600">{!isInitialized ? "Loading..." : "Redirecting to sign in..."}</p>
           </div>
         </div>
       )

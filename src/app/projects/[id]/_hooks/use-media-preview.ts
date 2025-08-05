@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useMemo } from "react";
 import { useTimelineStore } from "@/stores/timeline-store";
-import { ITimelineClip } from "@/types/timeline";
+import { ITimelineClip } from "@/types/timeline.types";
 
 interface MediaRefs {
   videoRefs: Map<string, HTMLVideoElement>;

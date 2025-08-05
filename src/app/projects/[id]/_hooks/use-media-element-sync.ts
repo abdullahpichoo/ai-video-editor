@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTimelineStore } from "@/stores/timeline-store";
-import { ITimelineClip } from "@/types/timeline";
+import { ITimelineClip } from "@/types/timeline.types";
 
 interface MediaSyncHook {
   videoRef: React.RefObject<HTMLVideoElement | null>;

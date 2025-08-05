@@ -1,9 +1,9 @@
 import { useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAssetsStore } from "@/stores/assets-store";
-import { AssetsService } from "@/services/assets";
+import { AssetsService } from "@/services/assets.service";
 import { useMediaProcessing } from "../_hooks/use-media-processing";
-import { IAssetUploadRequest } from "@/types/asset";
+import { IAssetUploadRequest } from "@/types/asset.types";
 import { toast } from "sonner";
 import { queryClient } from "@/components/providers/Providers";
 
@@ -19,8 +19,7 @@ export const useAssets = (projectId: string) => {
     removeUploadingAsset,
   } = useAssetsStore();
 
-  const { validateFile, generateUploadData, extractMetadata } =
-    useMediaProcessing();
+  const { validateFile, generateUploadData, extractMetadata } = useMediaProcessing();
 
   const {
     data: queryAssets = [],
@@ -36,9 +35,8 @@ export const useAssets = (projectId: string) => {
       }
       return result.data?.assets || [];
     },
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    staleTime: 0,
     retry: false,
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   useEffect(() => {
@@ -48,18 +46,8 @@ export const useAssets = (projectId: string) => {
   }, [queryAssets, setAssets]);
 
   const uploadMutation = useMutation({
-    mutationFn: async ({
-      file,
-      uploadData,
-    }: {
-      file: File;
-      uploadData: IAssetUploadRequest;
-    }) => {
-      const result = await AssetsService.uploadAsset(
-        projectId,
-        file,
-        uploadData
-      );
+    mutationFn: async ({ file, uploadData }: { file: File; uploadData: IAssetUploadRequest }) => {
+      const result = await AssetsService.uploadAsset(projectId, file, uploadData);
       if (!result.success) {
         throw new Error("Upload failed");
       }
@@ -103,11 +91,7 @@ export const useAssets = (projectId: string) => {
 
   const uploadAsset = useCallback(
     async (file: File) => {
-      const fileType = file.type.startsWith("video/")
-        ? "video"
-        : file.type.startsWith("image/")
-        ? "image"
-        : "audio";
+      const fileType = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : "audio";
 
       const validationError = validateFile(file, fileType);
 
@@ -128,11 +112,7 @@ export const useAssets = (projectId: string) => {
       try {
         const metadata = await extractMetadata(file, fileType);
 
-        const uploadData: IAssetUploadRequest = await generateUploadData(
-          file,
-          fileType,
-          metadata
-        );
+        const uploadData: IAssetUploadRequest = await generateUploadData(file, fileType, metadata);
 
         updateUploadingAsset(uploadId, { progress: 50 });
 
@@ -173,9 +153,7 @@ export const useAssets = (projectId: string) => {
 
   const retryUpload = useCallback(
     async (uploadId: string) => {
-      const uploadingAsset = uploadingAssets.find(
-        (asset) => asset.id === uploadId
-      );
+      const uploadingAsset = uploadingAssets.find((asset) => asset.id === uploadId);
       if (uploadingAsset) {
         removeUploadingAsset(uploadId);
         await uploadAsset(uploadingAsset.file);
@@ -188,10 +166,7 @@ export const useAssets = (projectId: string) => {
     assets: storeAssets,
     uploadingAssets,
     isLoading,
-    error:
-      error?.message ||
-      uploadMutation.error?.message ||
-      deleteMutation.error?.message,
+    error: error?.message || uploadMutation.error?.message || deleteMutation.error?.message,
     fetchAssets,
     uploadAsset,
     deleteAsset,

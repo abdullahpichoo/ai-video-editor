@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-const MEDIA_LIMITS = {
+export const MEDIA_LIMITS = {
   video: {
     maxSize: 100 * 1024 * 1024, // 100MB
     formats: ["mp4", "webm"],
@@ -38,93 +38,75 @@ interface UploadData {
 }
 
 export const useMediaProcessing = () => {
-  const validateFile = useCallback(
-    (file: File, type: "video" | "image" | "audio"): string | null => {
-      const limits = MEDIA_LIMITS[type];
+  const validateFile = useCallback((file: File, type: "video" | "image" | "audio"): string | null => {
+    const limits = MEDIA_LIMITS[type];
 
-      if (file.size > limits.maxSize) {
-        return `File size exceeds ${Math.round(
-          limits.maxSize / (1024 * 1024)
-        )}MB limit`;
-      }
+    if (file.size > limits.maxSize) {
+      return `File size exceeds ${Math.round(limits.maxSize / (1024 * 1024))}MB limit`;
+    }
 
-      const extension = file.name.split(".").pop()?.toLowerCase();
-      if (!extension || !limits.formats.includes(extension)) {
-        return `Unsupported format. Supported: ${limits.formats.join(", ")}`;
-      }
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !limits.formats.includes(extension)) {
+      return `Unsupported format. Supported: ${limits.formats.join(", ")}`;
+    }
 
-      if (!limits.mimeTypes.includes(file.type)) {
-        return `Invalid file type`;
-      }
+    if (!limits.mimeTypes.includes(file.type)) {
+      return `Invalid file type`;
+    }
 
-      return null;
-    },
-    []
-  );
+    return null;
+  }, []);
 
-  const extractMetadata = useCallback(
-    async (
-      file: File,
-      type: "video" | "image" | "audio"
-    ): Promise<MediaMetadata> => {
-      try {
-        if (type === "image") {
-          return new Promise<MediaMetadata>((resolve) => {
-            const img = document.createElement("img");
-            img.onload = () => {
-              resolve({
-                width: img.width,
-                height: img.height,
-                size: file.size,
-                format: file.name.split(".").pop()?.toLowerCase() || "",
-              });
-              URL.revokeObjectURL(img.src);
+  const extractMetadata = useCallback(async (file: File, type: "video" | "image" | "audio"): Promise<MediaMetadata> => {
+    try {
+      if (type === "image") {
+        return new Promise<MediaMetadata>((resolve) => {
+          const img = document.createElement("img");
+          img.onload = () => {
+            resolve({
+              width: img.width,
+              height: img.height,
+              size: file.size,
+              format: file.name.split(".").pop()?.toLowerCase() || "",
+            });
+            URL.revokeObjectURL(img.src);
+          };
+          img.src = URL.createObjectURL(file);
+        });
+      } else if (type === "video" || type === "audio") {
+        return new Promise<MediaMetadata>((resolve) => {
+          const element = type === "video" ? document.createElement("video") : document.createElement("audio");
+
+          element.onloadedmetadata = () => {
+            const metadata: MediaMetadata = {
+              duration: element.duration,
+              size: file.size,
+              format: file.name.split(".").pop()?.toLowerCase() || "",
             };
-            img.src = URL.createObjectURL(file);
-          });
-        } else if (type === "video" || type === "audio") {
-          return new Promise<MediaMetadata>((resolve) => {
-            const element =
-              type === "video"
-                ? document.createElement("video")
-                : document.createElement("audio");
 
-            element.onloadedmetadata = () => {
-              const metadata: MediaMetadata = {
-                duration: element.duration,
-                size: file.size,
-                format: file.name.split(".").pop()?.toLowerCase() || "",
-              };
+            if (type === "video" && "videoWidth" in element) {
+              metadata.width = (element as HTMLVideoElement).videoWidth;
+              metadata.height = (element as HTMLVideoElement).videoHeight;
+            }
 
-              if (type === "video" && "videoWidth" in element) {
-                metadata.width = (element as HTMLVideoElement).videoWidth;
-                metadata.height = (element as HTMLVideoElement).videoHeight;
-              }
-
-              resolve(metadata);
-              URL.revokeObjectURL(element.src);
-            };
-            element.src = URL.createObjectURL(file);
-          });
-        }
-      } catch {
-        console.error("Error extracting metadata");
+            resolve(metadata);
+            URL.revokeObjectURL(element.src);
+          };
+          element.src = URL.createObjectURL(file);
+        });
       }
+    } catch {
+      console.error("Error extracting metadata");
+    }
 
-      return {
-        size: file.size,
-        format: file.name.split(".").pop()?.toLowerCase() || "",
-      };
-    },
-    []
-  );
+    return {
+      size: file.size,
+      format: file.name.split(".").pop()?.toLowerCase() || "",
+    };
+  }, []);
 
   const generateUploadData = useCallback(
-    async (
-      file: File,
-      type: "video" | "image" | "audio",
-      metadata: MediaMetadata
-    ): Promise<UploadData> => {
+    async (file: File, type: "video" | "image" | "audio", metadata: MediaMetadata): Promise<UploadData> => {
       const baseData: UploadData = {
         originalName: file.name,
         mimeType: file.type,
@@ -142,11 +124,8 @@ export const useMediaProcessing = () => {
         };
       }
 
-      // For video files, we can set hasAudio to true by default
-      // In a real implementation, you might want to detect this
       if (type === "video") {
         baseData.hasAudio = true;
-        // Default fps for videos (in a real app, you'd detect this)
         baseData.fps = 30;
       }
 

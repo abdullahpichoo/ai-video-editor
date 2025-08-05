@@ -1,3 +1,5 @@
+import { IApiResponse } from "./api-response.types";
+
 export interface ITimeline {
   id: string;
   projectId: string;
@@ -27,7 +29,6 @@ export interface ITimelineClip {
   startTime: number;
   duration: number;
 
-  // Original bounds for non-destructive trimming
   originalStartTime: number;
   originalEndTime: number;
 
@@ -72,3 +73,20 @@ export interface ISubtitleStyle {
   outline: boolean;
   shadow: boolean;
 }
+
+export interface ITimelineMongoResponse extends Omit<ITimeline, "id" | "tracks"> {
+  _id: string;
+  tracks: ITimelineTrackMongoResponse[];
+}
+
+export interface ITimelineTrackMongoResponse extends Omit<ITimelineTrack, "id" | "clips"> {
+  _id: string;
+  clips: ITimelineClipMongoResponse[];
+}
+
+export interface ITimelineClipMongoResponse extends Omit<ITimelineClip, "id"> {
+  _id: string;
+}
+
+export type IFetchTimelineResponse = IApiResponse<ITimelineMongoResponse | null>;
+export type IUpdateTimelineResponse = IApiResponse<ITimelineMongoResponse>;

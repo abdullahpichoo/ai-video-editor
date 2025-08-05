@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,16 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import api from "@/lib/api";
-import { queryClient } from "@/components/providers/Providers";
+import { useCreateProject } from "../_api/use-projects";
 import { resolutionPresets } from "./schema";
 
 interface CreateProjectData {
@@ -52,30 +44,9 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
     fps: 30,
   });
 
-  const createProjectMutation = useMutation({
-    mutationFn: async (data: CreateProjectData) => {
-      const response = await api.post("/projects", data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Project created successfully!");
-      setOpen(false);
-      setFormData({
-        title: "",
-        description: "",
-        resolution: { width: 1920, height: 1080 },
-        fps: 30,
-      });
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create project";
-      toast.error(errorMessage);
-    },
-  });
+  const createProjectMutation = useCreateProject();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.title.trim()) {
@@ -88,13 +59,22 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
       return;
     }
 
-    createProjectMutation.mutate(formData);
+    try {
+      await createProjectMutation.mutateAsync(formData);
+      setOpen(false);
+      setFormData({
+        title: "",
+        description: "",
+        resolution: { width: 1920, height: 1080 },
+        fps: 30,
+      });
+    } catch {
+      // Error is handled by the hook
+    }
   };
 
   const handlePresetChange = (preset: string) => {
-    const selectedPreset = resolutionPresets.find(
-      (p) => `${p.width}x${p.height}` === preset
-    );
+    const selectedPreset = resolutionPresets.find((p) => `${p.width}x${p.height}` === preset);
     if (selectedPreset) {
       setFormData((prev) => ({
         ...prev,
@@ -107,14 +87,25 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        setOpen(newOpen);
+        if (!newOpen) {
+          setFormData({
+            title: "",
+            description: "",
+            resolution: { width: 1920, height: 1080 },
+            fps: 30,
+          });
+        }
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>
-            Set up your video project with the desired dimensions and settings.
-          </DialogDescription>
+          <DialogDescription>Set up your video project with the desired dimensions and settings.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -123,9 +114,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
               id="title"
               placeholder="My awesome video"
               value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, title: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
               required
             />
           </div>
@@ -153,10 +142,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 {resolutionPresets.map((preset, id) => (
-                  <SelectItem
-                    key={`${id}`}
-                    value={`${preset.width}x${preset.height}`}
-                  >
+                  <SelectItem key={`${id}`} value={`${preset.width}x${preset.height}`}>
                     {preset.label}
                   </SelectItem>
                 ))}
@@ -229,17 +215,11 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={createProjectMutation.isPending}>
-              {createProjectMutation.isPending
-                ? "Creating..."
-                : "Create Project"}
+              {createProjectMutation.isPending ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
         </form>

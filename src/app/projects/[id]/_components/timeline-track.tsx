@@ -1,6 +1,6 @@
 "use client";
 
-import { ITimelineTrack } from "@/types/timeline";
+import { ITimelineTrack } from "@/types/timeline.types";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface TimelineTrackProps {

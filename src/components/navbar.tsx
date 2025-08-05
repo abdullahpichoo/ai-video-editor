@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Video, User, LogOut, FolderOpen } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -16,9 +16,7 @@ export function Navbar() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <Video className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">
-                AI Video Editor
-              </span>
+              <span className="text-xl font-bold text-gray-900">AI Video Editor</span>
             </Link>
           </div>
 
@@ -43,17 +41,10 @@ export function Navbar() {
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-gray-600" />
-                    <span className="text-sm text-gray-700">
-                      {user?.name || user?.email}
-                    </span>
+                    <span className="text-sm text-gray-700">{user?.name || user?.email}</span>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={logout}
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </Button>

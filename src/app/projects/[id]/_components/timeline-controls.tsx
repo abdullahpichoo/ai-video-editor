@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Play, Pause, SkipBack, SkipForward, Volume2, Scissors, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { formatTime } from "../_utils/timeline";
-import { ITimelineClip } from "@/types/timeline";
+import { ITimelineClip } from "@/types/timeline.types";
 
 interface TimelineControlsProps {
   currentTime: number;

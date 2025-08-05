@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth-store";
-import { validateSession } from "@/services/auth";
+import { validateSession } from "@/services/auth.service";
 
 interface AuthProviderProps {
   children: React.ReactNode;

@@ -1,8 +1,10 @@
 "use client";
 
-import { Trash2, Upload, AlertCircle, Video, Image as ImageIcon, Music } from "lucide-react";
-import { IAsset } from "@/types/asset";
+import { Trash2, Upload, AlertCircle, Video, Image as ImageIcon, Music, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { IAsset } from "@/types/asset.types";
 import { useTimelineStore } from "@/stores/timeline-store";
+import { useAssetHasActiveJob } from "@/hooks/use-ai-jobs";
 
 interface UploadingAsset {
   id: string;
@@ -24,6 +26,9 @@ interface AssetCardProps {
 
 export function AssetCard({ asset, uploadingAsset, onDelete, onRetry, isSelected, onSelect }: AssetCardProps) {
   const { addClip } = useTimelineStore();
+
+  // Check if asset has active AI job
+  const { hasActiveJob, activeJob } = useAssetHasActiveJob(asset?.assetId || "", asset?.projectId);
 
   const isUploading = !!uploadingAsset;
   const isError = uploadingAsset?.status === "error";
@@ -98,11 +103,21 @@ export function AssetCard({ asset, uploadingAsset, onDelete, onRetry, isSelected
       onDoubleClick={handleDoubleClick}
     >
       {/* Type Badge */}
-      <div
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-[10px] font-medium mb-2 ${getTypeColor()}`}
-      >
-        {getTypeIcon()}
-        {type.toUpperCase()}
+      <div className="flex items-center justify-between mb-2">
+        <div
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-[10px] font-medium ${getTypeColor()}`}
+        >
+          {getTypeIcon()}
+          {type.toUpperCase()}
+        </div>
+
+        {/* AI Processing Badge */}
+        {hasActiveJob && activeJob && (
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200 text-[10px] px-1 py-0">
+            <Loader2 className="w-2 h-2 mr-1 animate-spin" />
+            AI Processing
+          </Badge>
+        )}
       </div>
 
       {/* File Name */}

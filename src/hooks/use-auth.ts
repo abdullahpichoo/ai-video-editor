@@ -1,17 +1,11 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
-import * as auth from "@/services/auth";
+import * as auth from "@/services/auth.service";
 
 export function useAuth() {
   const router = useRouter();
-  const {
-    user,
-    isAuthenticated,
-    isInitialized,
-    setUser,
-    logout: clearAuth,
-  } = useAuthStore();
+  const { user, isAuthenticated, isInitialized, setUser, logout: clearAuth } = useAuthStore();
 
   const login = useCallback(
     async (email: string, password: string) => {

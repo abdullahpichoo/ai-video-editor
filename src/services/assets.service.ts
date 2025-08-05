@@ -1,16 +1,10 @@
 import api from "@/lib/api";
-import { IAssetUploadRequest } from "@/types/asset";
-import {
-  IDeleteAssetResponse,
-  IFetchAssetsResponse,
-  IUploadAssetResponse,
-} from "@/types/asset";
+import { IAssetUploadRequest } from "@/types/asset.types";
+import { IDeleteAssetResponse, IFetchAssetsResponse, IUploadAssetResponse } from "@/types/asset.types";
 
 export class AssetsService {
   static async fetchAssets(projectId: string): Promise<IFetchAssetsResponse> {
-    const response = await api.get<IFetchAssetsResponse>(
-      `/media/${projectId}/assets`
-    );
+    const response = await api.get<IFetchAssetsResponse>(`/media/${projectId}/assets`);
     return response.data;
   }
 
@@ -54,10 +48,7 @@ export class AssetsService {
     return response.data as IUploadAssetResponse;
   }
 
-  static async deleteAsset(
-    projectId: string,
-    assetId: string
-  ): Promise<IDeleteAssetResponse> {
+  static async deleteAsset(projectId: string, assetId: string): Promise<IDeleteAssetResponse> {
     const response = await api.delete(`/media/${assetId}`);
     return response.data as IDeleteAssetResponse;
   }

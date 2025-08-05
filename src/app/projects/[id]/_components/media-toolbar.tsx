@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Type, Plus } from "lucide-react";
 import { useTimelineStore } from "@/stores/timeline-store";
-import { ISubtitleStyle } from "@/types/timeline";
+import { ISubtitleStyle } from "@/types/timeline.types";
 
 export const MediaToolbar = () => {
   const { selectedClip, updateClipProperties, addTextClip } = useTimelineStore();

@@ -4,11 +4,9 @@ import React, { useCallback } from "react";
 import Image from "next/image";
 import { Rnd } from "react-rnd";
 import { useTimelineStore } from "@/stores/timeline-store";
-import { ITimelineClip } from "@/types/timeline";
+import { ITimelineClip } from "@/types/timeline.types";
 import { useMediaPreview } from "../_hooks/use-media-preview";
 import { useMediaElementSync } from "../_hooks/use-media-element-sync";
-import { MediaToolbar } from "./media-toolbar";
-import { ISubtitleStyle } from "@/types/timeline";
 
 interface MediaPreviewProps {
   width?: number;
