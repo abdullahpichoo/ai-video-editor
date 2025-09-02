@@ -1,9 +1,3 @@
-Build a Video Editor with AI Features
-
-Create a web-based video editor where users can upload videos and images, perform basic
-editing operations (trim, join, clip), and apply AI-powered features such as background noise
-removal and subtitle generation using external APIs.
-
 # Core Requirements:
 1. Core Video Editor
 - Allow users to:
@@ -24,18 +18,4 @@ some external API (like ElevenLabs Voice Isolator API or others)
 - Generate subtitles from audio/video using some external APIs like OpenAI Whisper (via
 OpenAI API), Gemini API, AssemblyAI, or Deepgram
 - Extract audio from video → generate subtitles → allow editing → display over video
-
-# Tech:
-Framework: Next.js (with App Router and TypeScript)
-Styling: TailwindCSS
-Database : MongoDB (with native Nodejs driver and u don’t have to use mongoose)
-Plus Points:
-Respecting type-safety and use of generics if possible
-Layered Architecture for backend (handler -> service -> repository)
-High Cohesion, Low Coupling
-Best React Practices
-Unit Tests if possible (with Jest)
-
-
-Note: Keep things simple. Don't overengineer. Don't add comments unless very very necessary.
 
